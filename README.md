@@ -12,13 +12,13 @@ Firebase logic lives in `src/lib/`. Status per module:
 |---|---|---|
 | **Auth** | ✅ Complete | Google sign-in, .edu enforcement, auth state listener |
 | **Sessions** | ✅ Complete | Create, join, expire, real-time listener for active sessions |
-| **Users** | In progress | Profile creation on first sign-in, course enrollment |
-| **Courses** | In progress | Create courses, fetch course data, check collaboration policy |
-| **Honor Code** | Scaffolded, needs refinement | Syllabus keyword scan → blocks posting if collaboration not allowed |
-| **Discussions** | In progress | Course-level threads, replies, real-time listener |
-| **Firestore rules** | ✅ Complete | Covers users, sessions, courses — needs discussions + replies |
+| **Users** | ✅ Complete | Profile creation on first sign-in, course enrollment |
+| **Courses** | ✅ Complete | Create courses, fetch course data, check collaboration policy |
+| **Honor Code** | Scaffolded, needs keyword refinement | Syllabus keyword scan → blocks posting if collaboration not allowed |
+| **Discussions** | ✅ Complete | Core CRUD done — search/filter utilities still TODO |
+| **Firestore rules** | ✅ Complete | Covers users, sessions, courses, discussions |
 
-**What's left: discussions backend + all frontend pages.**
+**Backend is complete and functional as of Milestone 1 (May 8).** All Firebase logic is in `src/lib/` and ready to wire into UI. Next phase: frontend pages.
 
 ---
 

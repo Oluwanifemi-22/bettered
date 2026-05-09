@@ -4,8 +4,8 @@
 - [x] Auth + .edu gating
 - [x] Real-time sessions (CRUD + listener)
 - [x] Create src/lib/discussions.ts — createDiscussion, getDiscussionsByClass, replyToDiscussion, listenToDiscussions
-- [x] Add /discussions/{id} and /replies/{id} to Firestore schema
-- [x] Update Firestore rules to cover discussions and replies collections
+- [x] Add /discussions/{id} to Firestore schema
+- [x] Update Firestore rules to cover all collections (users, sessions, courses, discussions)
 - [ ] Honor code — refine keyword detection logic, test against syllabi
 - [ ] Search/filter utilities — filterByClass, filterByKeyword
 
