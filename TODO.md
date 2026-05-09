@@ -1,13 +1,13 @@
 ## Milestone 1 (May 8) — MVP: Discussion Forum + Real-time Sessions
 
-### Backend (Kenaj) — Branch: backend/discussions
+### Backend (Kenaj) — Branch: backend/discussions — currently in progress
 - [x] Auth + .edu gating
 - [x] Real-time sessions (CRUD + listener)
+- [x] Create src/lib/discussions.ts — createDiscussion, getDiscussionsByClass, replyToDiscussion, listenToDiscussions
+- [x] Add /discussions/{id} and /replies/{id} to Firestore schema
+- [x] Update Firestore rules to cover discussions and replies collections
 - [ ] Honor code — refine keyword detection logic, test against syllabi
-- [ ] Create src/lib/discussions.ts — createDiscussion, getDiscussionsByClass, replyToDiscussion, listenToDiscussions
-- [ ] Add /discussions/{id} and /replies/{id} to Firestore schema
 - [ ] Search/filter utilities — filterByClass, filterByKeyword
-- [ ] Update Firestore rules to cover discussions and replies collections
 
 ### Frontend (Otis) — Landing Page (Discussion Forum) — Branch: frontend/landing-discussions
 - [ ] Main landing shows discussion threads (not sessions)

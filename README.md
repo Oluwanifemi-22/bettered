@@ -15,7 +15,7 @@ Firebase logic lives in `src/lib/`. Status per module:
 | **Users** | In progress | Profile creation on first sign-in, course enrollment |
 | **Courses** | In progress | Create courses, fetch course data, check collaboration policy |
 | **Honor Code** | Scaffolded, needs refinement | Syllabus keyword scan → blocks posting if collaboration not allowed |
-| **Discussions** | Not started | Course-level threads, replies, real-time listener |
+| **Discussions** | In progress | Course-level threads, replies, real-time listener |
 | **Firestore rules** | ✅ Complete | Covers users, sessions, courses — needs discussions + replies |
 
 **What's left: discussions backend + all frontend pages.**
