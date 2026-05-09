@@ -83,13 +83,13 @@ export default function Home() {
           <h2 className="font-semibold">Post a study session</h2>
           <input
             name="courseTag"
-            placeholder="Course (e.g. CS101)"
+            placeholder="Course (e.g. MATH 51)"
             required
             className="w-full border rounded px-3 py-2 text-sm"
           />
           <input
             name="location"
-            placeholder="Location (e.g. Mugar Library)"
+            placeholder="Location (e.g. Green Library Room 120)"
             required
             className="w-full border rounded px-3 py-2 text-sm"
           />
