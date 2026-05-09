@@ -34,16 +34,22 @@ Firebase logic lives in `src/lib/`. Status per module:
 
 ```
 src/lib/
-  firebase.ts       # Firebase app init — do not import directly in UI
-  auth.ts           # signInWithGoogle, signOut, onAuthChange
-  sessions.ts       # createSession, joinSession, expireSession,
-                    # getActiveSessions, listenToActiveSessions
-  users.ts          # createUserProfile, getUserProfile, addCourseToUser
-  courses.ts        # createCourse, getCourse, checkCollaborationAllowed
-  honorCode.ts      # parseSyllabusForCollaboration
+  firebase.ts         # Firebase app init — do not import directly in UI
+  auth.ts             # signInWithGoogle, signOut, onAuthChange
+  sessions.ts         # createSession, joinSession, expireSession,
+                      # getActiveSessions, listenToActiveSessions
+  users.ts            # createUserProfile, getUserProfile, addCourseToUser
+  courses.ts          # createCourse, getCourse, checkCollaborationAllowed
+  honorCode.ts        # parseSyllabusForCollaboration
+  discussions.ts      # createDiscussion, getDiscussionsByClass,
+                      # replyToDiscussion, listenToDiscussions, getDiscussionDetail
 
-app/                # Next.js App Router pages (UI to be built here)
-firestore.rules     # Firestore security rules
+app/
+  page.tsx            # Discussion board landing (search, filter tabs, thread list)
+  sessions/page.tsx   # Sessions feed + post a session form
+  discussions/
+    new/page.tsx      # Create discussion form
+firestore.rules       # Firestore security rules
 ```
 
 Import backend functions directly from `src/lib/` — never touch Firebase SDK calls in UI components:
@@ -101,18 +107,17 @@ firebase deploy --only firestore:rules
 
 ## What's Left to Build
 
-UI pages to build in `app/`, in priority order:
-
 **Discussion forum (primary):**
-- **Discussion forum landing** — list of threads filterable by course and keyword, real-time updates
-- **Discussion detail** — full thread, reply list, reply form
-- **Create discussion** — form for title, body, course tag; honor code check before submit
-
-**User:**
-- **User profile** — display name, school, enrolled courses; add/remove courses
+- ✅ Discussion board landing — thread list, search bar, filter tabs (built, wired to mock data — needs Firestore)
+- ✅ Create discussion form — UI complete, needs honor code check + Firestore submit
+- [ ] Discussion detail page — full thread, reply list, reply form
+- [ ] Wire discussion board to Firestore via listenToDiscussions
 
 **Sessions (secondary):**
-- **Session feed** — real-time list of active sessions, join button
-- **Post a session** — form for course tag, location, work description; honor code check before submit
+- ✅ Sessions page — post form + live feed built and wired to Firestore
+- [ ] Wire Join button to joinSession (button exists, not connected)
+
+**User:**
+- [ ] User profile page — display name, school, enrolled courses; add/remove courses
 
 All data logic lives in `src/lib/`. Pages should import from there and focus on rendering and user interaction only.
