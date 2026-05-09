@@ -52,6 +52,19 @@ export async function expireSession(sessionId: string) {
 export function listenToActiveSessions(callback: (sessions: { id: string; [key: string]: unknown }[]) => void) {
   const q = query(sessionsRef, where("status", "==", "active"));
   return onSnapshot(q, (snap) => {
-    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    const now = Timestamp.now();
+    const active: { id: string; [key: string]: unknown }[] = [];
+
+    snap.docs.forEach((d) => {
+      const data = d.data();
+      if ((data.expiresAt as Timestamp).toMillis() <= now.toMillis()) {
+        // Fire-and-forget: write the expired status back so future queries skip it
+        expireSession(d.id);
+      } else {
+        active.push({ id: d.id, ...data });
+      }
+    });
+
+    callback(active);
   });
 }

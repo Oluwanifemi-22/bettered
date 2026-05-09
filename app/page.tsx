@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { User } from "firebase/auth";
 import { signInWithGoogle, signOut, onAuthChange } from "@/src/lib/auth";
-import { createSession, listenToActiveSessions } from "@/src/lib/sessions";
+import { createSession, joinSession, listenToActiveSessions } from "@/src/lib/sessions";
 
 interface Session {
   id: string;
@@ -119,6 +119,14 @@ export default function Home() {
               <p className="font-medium">{s.courseTag}</p>
               <p className="text-gray-600">{s.location}</p>
               <p>{s.workDescription}</p>
+              {user && s.createdBy !== user.uid && (
+                <button
+                  onClick={() => joinSession(s.id, user.uid)}
+                  className="text-xs text-blue-600 underline"
+                >
+                  Join
+                </button>
+              )}
             </div>
           ))
         )}

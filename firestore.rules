@@ -16,6 +16,12 @@ service cloud.firestore {
 
       // Only the creator can update (e.g. expire) or delete their session
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.createdBy;
+
+      // Any authenticated user can join a session (append to joinedBy only, no removals or edits)
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['joinedBy'])
+        && request.resource.data.joinedBy.size() > resource.data.joinedBy.size()
+        && request.resource.data.joinedBy[0:resource.data.joinedBy.size()] == resource.data.joinedBy;
     }
 
     match /courses/{courseId} {
@@ -27,6 +33,20 @@ service cloud.firestore {
 
       // Courses are never deleted from the client
       allow delete: if false;
+    }
+
+    match /discussions/{discussionId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+
+      // Only the creator can delete or fully update their discussion
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.createdBy;
+
+      // Any authenticated user can append a reply, but cannot edit or remove existing replies
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['replies'])
+        && request.resource.data.replies.size() > resource.data.replies.size()
+        && request.resource.data.replies[0:resource.data.replies.size()] == resource.data.replies;
     }
 
   }
