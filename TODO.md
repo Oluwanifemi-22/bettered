@@ -9,13 +9,13 @@
 - [ ] Search/filter utilities — filterByClass, filterByKeyword
 - [ ] Update Firestore rules to cover discussions and replies collections
 
-### Frontend — Landing Page (Discussion Forum) — Branch: frontend/landing-discussions
+### Frontend (Otis) — Landing Page (Discussion Forum) — Branch: frontend/landing-discussions
 - [ ] Main landing shows discussion threads (not sessions)
 - [ ] Search bar (by class, by keyword)
 - [ ] Filter tabs (by class, unanswered, etc.)
 - [ ] Click thread to open detail view
 
-### Frontend — Discussion Detail — Branch: frontend/discussion-detail
+### Frontend (Otis) — Discussion Detail — Branch: frontend/discussion-detail
 - [ ] Display full thread
 - [ ] Reply form and reply list
 - [ ] Link to join in-person session (if available)
