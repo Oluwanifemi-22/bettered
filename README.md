@@ -1,23 +1,24 @@
 # BetterEd
 
-Real-time student collaboration platform. Students post what they're working on — course, location, task — and other students can see who's around and join them. Built for university students: .edu emails only.
+Student collaboration platform for university courses. The primary feature is a course-based discussion forum where students can ask questions, share resources, and collaborate. A real-time session board (post where you're studying, join others) is a secondary feature. Built for university students: .edu emails only.
 
 ---
 
 ## Backend Status
 
-The backend is complete. All Firebase logic lives in `src/lib/` and is ready to wire into UI pages.
+Firebase logic lives in `src/lib/`. Status per module:
 
-| Module | What's done |
-|---|---|
-| **Auth** | Google sign-in, .edu enforcement, auth state listener |
-| **Sessions** | Create, join, expire, real-time listener for active sessions |
-| **Users** | Profile creation on first sign-in, course enrollment |
-| **Courses** | Create courses, fetch course data, check collaboration policy |
-| **Honor Code** | Syllabus keyword scan → blocks session posting if collaboration not allowed |
-| **Firestore rules** | Security rules written and ready to deploy |
+| Module | Status | Notes |
+|---|---|---|
+| **Auth** | ✅ Complete | Google sign-in, .edu enforcement, auth state listener |
+| **Sessions** | ✅ Complete | Create, join, expire, real-time listener for active sessions |
+| **Users** | In progress | Profile creation on first sign-in, course enrollment |
+| **Courses** | In progress | Create courses, fetch course data, check collaboration policy |
+| **Honor Code** | Scaffolded, needs refinement | Syllabus keyword scan → blocks posting if collaboration not allowed |
+| **Discussions** | Not started | Course-level threads, replies, real-time listener |
+| **Firestore rules** | ✅ Complete | Covers users, sessions, courses — needs discussions + replies |
 
-**What's left: the frontend.** UI pages need to be built that call these lib functions.
+**What's left: discussions backend + all frontend pages.**
 
 ---
 
@@ -100,12 +101,18 @@ firebase deploy --only firestore:rules
 
 ## What's Left to Build
 
-These are the UI pages that need to be created in `app/`:
+UI pages to build in `app/`, in priority order:
 
-- **Sign-in page** — Google OAuth button, redirect after auth
+**Discussion forum (primary):**
+- **Discussion forum landing** — list of threads filterable by course and keyword, real-time updates
+- **Discussion detail** — full thread, reply list, reply form
+- **Create discussion** — form for title, body, course tag; honor code check before submit
+
+**User:**
+- **User profile** — display name, school, enrolled courses; add/remove courses
+
+**Sessions (secondary):**
 - **Session feed** — real-time list of active sessions, join button
 - **Post a session** — form for course tag, location, work description; honor code check before submit
-- **User profile** — display name, school, enrolled courses
-- **Course enrollment** — add courses to your profile
 
-All data logic is already in `src/lib/`. Pages should import from there and focus on rendering and user interaction only.
+All data logic lives in `src/lib/`. Pages should import from there and focus on rendering and user interaction only.
