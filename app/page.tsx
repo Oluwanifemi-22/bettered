@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { User } from "firebase/auth";
 import { signInWithGoogle, signOut, onAuthChange } from "@/src/lib/auth";
+import Link from "next/link";
 
 const discussionThreads = [
   {
@@ -72,6 +73,15 @@ export default function Home() {
 
   return (
     <div className="space-y-8">
+      <Link
+        href="/discussions/new"
+        className="fixed bottom-8 right-8 z-50 flex items-center gap-3 rounded-full bg-[#8C1515] px-6 py-4 text-sm font-bold text-white shadow-lg shadow-red-900/20 transition hover:-translate-y-1 hover:bg-[#6f1010] hover:shadow-xl"
+      >
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-lg leading-none text-[#8C1515]">
+          +
+        </span>
+        <span>Create post</span>
+      </Link>
       <section className="rounded-3xl border border-[#ead7d7] bg-white px-8 py-10 shadow-sm">
         <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
           <div className="max-w-2xl space-y-4">

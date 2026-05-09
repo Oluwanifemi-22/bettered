@@ -177,8 +177,7 @@ export default function SessionsPage() {
                         <h2 className="text-lg font-bold">Quick reminder</h2>
                         <p className="mt-2 text-sm leading-6 text-red-50">
                             Study sessions should support allowed collaboration. Don’t share
-                            restricted answers, private solutions, or anything that violates a
-                            course policy.
+                            restricted answers, private solutions, or anything that violates the Honor Code.
                         </p>
                     </div>
                 </div>
