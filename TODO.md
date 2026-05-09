@@ -25,7 +25,7 @@
 - [ ] Honor code check before submit
 - [ ] Submit to Firestore
 
-### Frontend — User Profile — Branch: frontend/user-profile
+### (Otis) Frontend — User Profile — Branch: frontend/user-profile
 - [ ] Display: name, school, enrolled classes
 - [ ] Add/remove classes from profile
 
