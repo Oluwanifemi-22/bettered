@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { User } from "firebase/auth";
-import { signInWithGoogle, signOut, onAuthChange } from "@/src/lib/auth";
+import { signOut, onAuthChange } from "@/src/lib/auth";
 import { createSession, listenToActiveSessions } from "@/src/lib/sessions";
 
 interface Session {
@@ -15,29 +16,24 @@ interface Session {
 }
 
 export default function SessionsPage() {
+    const router = useRouter();
     const [user, setUser] = useState<User | null>(null);
     const [sessions, setSessions] = useState<Session[]>([]);
-    const [authError, setAuthError] = useState("");
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const unsubAuth = onAuthChange(setUser);
+        const unsubAuth = onAuthChange((currentUser) => {
+            if (!currentUser) { router.push("/"); return; }
+            setUser(currentUser);
+            setLoading(false);
+        });
         const unsubSessions = listenToActiveSessions(setSessions);
 
         return () => {
             unsubAuth();
             unsubSessions();
         };
-    }, []);
-
-    async function handleSignIn() {
-        setAuthError("");
-
-        try {
-            await signInWithGoogle();
-        } catch (e: unknown) {
-            setAuthError(e instanceof Error ? e.message : "Sign-in failed.");
-        }
-    }
+    }, [router]);
 
     async function handleCreateSession(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
@@ -58,6 +54,14 @@ export default function SessionsPage() {
         form.reset();
     }
 
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-12">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#ead7d7] border-t-[#8C1515]"></div>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-8">
             <section className="rounded-3xl border border-[#ead7d7] bg-white px-8 py-10 shadow-sm">
@@ -72,111 +76,76 @@ export default function SessionsPage() {
                         </h1>
 
                         <p className="text-base leading-7 text-neutral-600">
-                            Post where you’re studying, what class you’re working on, and what
+                            Post where you're studying, what class you're working on, and what
                             you want help with. BetterEd helps turn scattered study plans into
                             active sessions people can actually join.
                         </p>
                     </div>
 
                     <div className="rounded-2xl border border-[#ead7d7] bg-[#faf7f5] p-5">
-                        {user ? (
-                            <div className="space-y-3">
-                                <p className="text-sm text-neutral-500">Signed in as</p>
-                                <p className="font-medium text-neutral-900">{user.email}</p>
-                                <button
-                                    onClick={signOut}
-                                    className="rounded-full border border-[#8C1515] px-4 py-2 text-sm font-medium text-[#8C1515] transition hover:bg-[#8C1515] hover:text-white"
-                                >
-                                    Sign out
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="space-y-3">
-                                <p className="text-sm font-medium text-neutral-700">
-                                    Sign in to post or join a study session.
-                                </p>
-                                <button
-                                    onClick={handleSignIn}
-                                    className="rounded-full bg-[#8C1515] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#6f1010]"
-                                >
-                                    Sign in with Google
-                                </button>
-                                {authError && (
-                                    <p className="text-sm text-red-600">{authError}</p>
-                                )}
-                            </div>
-                        )}
+                        <div className="space-y-3">
+                            <p className="text-sm text-neutral-500">Signed in as</p>
+                            <p className="font-medium text-neutral-900">{user?.email}</p>
+                            <button
+                                onClick={signOut}
+                                className="rounded-full border border-[#8C1515] px-4 py-2 text-sm font-medium text-[#8C1515] transition hover:bg-[#8C1515] hover:text-white"
+                            >
+                                Sign out
+                            </button>
+                        </div>
                     </div>
                 </div>
             </section>
 
             <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
                 <div className="space-y-6">
-                    {user ? (
-                        <form
-                            onSubmit={handleCreateSession}
-                            className="rounded-3xl border border-[#ead7d7] bg-white p-6 shadow-sm"
-                        >
-                            <h2 className="text-2xl font-bold text-neutral-950">
-                                Post a study session
-                            </h2>
-                            <p className="mt-1 text-sm text-neutral-500">
-                                Let classmates know what you’re working on and where they can
-                                join you.
-                            </p>
+                    <form
+                        onSubmit={handleCreateSession}
+                        className="rounded-3xl border border-[#ead7d7] bg-white p-6 shadow-sm"
+                    >
+                        <h2 className="text-2xl font-bold text-neutral-950">
+                            Post a study session
+                        </h2>
+                        <p className="mt-1 text-sm text-neutral-500">
+                            Let classmates know what you're working on and where they can
+                            join you.
+                        </p>
 
-                            <div className="mt-5 space-y-3">
-                                <input
-                                    name="courseTag"
-                                    placeholder="Course (e.g. CS278)"
-                                    required
-                                    className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-[#8C1515]"
-                                />
+                        <div className="mt-5 space-y-3">
+                            <input
+                                name="courseTag"
+                                placeholder="Course (e.g. CS278)"
+                                required
+                                className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-[#8C1515]"
+                            />
 
-                                <input
-                                    name="location"
-                                    placeholder="Location (e.g. Gates 360)"
-                                    required
-                                    className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-[#8C1515]"
-                                />
+                            <input
+                                name="location"
+                                placeholder="Location (e.g. Gates 360)"
+                                required
+                                className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-[#8C1515]"
+                            />
 
-                                <input
-                                    name="workDescription"
-                                    placeholder="What are you working on?"
-                                    required
-                                    className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-[#8C1515]"
-                                />
+                            <input
+                                name="workDescription"
+                                placeholder="What are you working on?"
+                                required
+                                className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-[#8C1515]"
+                            />
 
-                                <button
-                                    type="submit"
-                                    className="w-full rounded-xl bg-[#8C1515] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#6f1010]"
-                                >
-                                    Create session
-                                </button>
-                            </div>
-                        </form>
-                    ) : (
-                        <div className="rounded-3xl border border-[#ead7d7] bg-white p-6 shadow-sm">
-                            <h2 className="text-2xl font-bold text-neutral-950">
-                                Post a study session
-                            </h2>
-                            <p className="mt-2 text-sm leading-6 text-neutral-600">
-                                Sign in first to let classmates know where you’re studying and
-                                what you’re working on.
-                            </p>
                             <button
-                                onClick={handleSignIn}
-                                className="mt-5 rounded-full bg-[#8C1515] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#6f1010]"
+                                type="submit"
+                                className="w-full rounded-xl bg-[#8C1515] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#6f1010]"
                             >
-                                Sign in to post
+                                Create session
                             </button>
                         </div>
-                    )}
+                    </form>
 
                     <div className="rounded-3xl border border-[#ead7d7] bg-[#8C1515] p-6 text-white shadow-sm">
                         <h2 className="text-lg font-bold">Quick reminder</h2>
                         <p className="mt-2 text-sm leading-6 text-red-50">
-                            Study sessions should support allowed collaboration. Don’t share
+                            Study sessions should support allowed collaboration. Don't share
                             restricted answers, private solutions, or anything that violates the Honor Code.
                         </p>
                     </div>
@@ -205,7 +174,7 @@ export default function SessionsPage() {
                                     No active sessions yet.
                                 </p>
                                 <p className="mt-1 text-sm text-neutral-500">
-                                    Be the first to post what you’re working on.
+                                    Be the first to post what you're working on.
                                 </p>
                             </div>
                         ) : (

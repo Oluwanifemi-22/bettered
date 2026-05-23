@@ -2,33 +2,37 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { User } from "firebase/auth";
-import { signInWithGoogle, signOut, onAuthChange } from "@/src/lib/auth";
+import { signOut, onAuthChange } from "@/src/lib/auth";
 
 export default function CreateDiscussionPage() {
+    const router = useRouter();
     const [user, setUser] = useState<User | null>(null);
-    const [authError, setAuthError] = useState("");
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const unsubAuth = onAuthChange(setUser);
+        const unsubAuth = onAuthChange((currentUser) => {
+            if (!currentUser) { router.push("/"); return; }
+            setUser(currentUser);
+            setLoading(false);
+        });
         return () => unsubAuth();
-    }, []);
-
-    async function handleSignIn() {
-        setAuthError("");
-
-        try {
-            await signInWithGoogle();
-        } catch (e: unknown) {
-            setAuthError(e instanceof Error ? e.message : "Sign-in failed.");
-        }
-    }
+    }, [router]);
 
     function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
 
         // Backend not connected yet — this is UI-only for now.
         alert("Discussion post UI is ready. Backend connection coming later.");
+    }
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-12">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#ead7d7] border-t-[#8C1515]"></div>
+            </div>
+        );
     }
 
     return (
@@ -58,33 +62,16 @@ export default function CreateDiscussionPage() {
                     </div>
 
                     <div className="rounded-2xl border border-[#ead7d7] bg-[#faf7f5] p-5">
-                        {user ? (
-                            <div className="space-y-3">
-                                <p className="text-sm text-neutral-500">Signed in as</p>
-                                <p className="font-medium text-neutral-900">{user.email}</p>
-                                <button
-                                    onClick={signOut}
-                                    className="rounded-full border border-[#8C1515] px-4 py-2 text-sm font-medium text-[#8C1515] transition hover:bg-[#8C1515] hover:text-white"
-                                >
-                                    Sign out
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="space-y-3">
-                                <p className="text-sm font-medium text-neutral-700">
-                                    Sign in to create a discussion post.
-                                </p>
-                                <button
-                                    onClick={handleSignIn}
-                                    className="rounded-full bg-[#8C1515] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#6f1010]"
-                                >
-                                    Sign in with Google
-                                </button>
-                                {authError && (
-                                    <p className="text-sm text-red-600">{authError}</p>
-                                )}
-                            </div>
-                        )}
+                        <div className="space-y-3">
+                            <p className="text-sm text-neutral-500">Signed in as</p>
+                            <p className="font-medium text-neutral-900">{user?.email}</p>
+                            <button
+                                onClick={signOut}
+                                className="rounded-full border border-[#8C1515] px-4 py-2 text-sm font-medium text-[#8C1515] transition hover:bg-[#8C1515] hover:text-white"
+                            >
+                                Sign out
+                            </button>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -159,10 +146,9 @@ export default function CreateDiscussionPage() {
 
                         <button
                             type="submit"
-                            disabled={!user}
-                            className="w-full rounded-xl bg-[#8C1515] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#6f1010] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:text-neutral-500"
+                            className="w-full rounded-xl bg-[#8C1515] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#6f1010]"
                         >
-                            {user ? "Post discussion" : "Sign in to post"}
+                            Post discussion
                         </button>
                     </div>
                 </form>

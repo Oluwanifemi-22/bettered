@@ -15,9 +15,9 @@ export async function signInWithGoogle(): Promise<User> {
   const result = await signInWithPopup(auth, provider);
   const user = result.user;
 
-  if (!user.email?.endsWith(".edu")) {
+  if (!user.email?.endsWith("@stanford.edu")) {
     await user.delete();
-    throw new Error("Only .edu email addresses are allowed.");
+    throw new Error("Only @stanford.edu email addresses are allowed.");
   }
 
   return user;
