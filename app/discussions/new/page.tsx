@@ -5,13 +5,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { User } from "firebase/auth";
 import { signOut, onAuthChange } from "@/src/lib/auth";
+import { createDiscussion } from "@/src/lib/discussions";
+import { getAllCourses } from "@/src/lib/courses";
 
 export default function CreateDiscussionPage() {
     const router = useRouter();
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState("");
+    const [courses, setCourses] = useState<{ id: string; courseName: string }[]>([]);
 
     useEffect(() => {
+        getAllCourses().then(setCourses);
         const unsubAuth = onAuthChange((currentUser) => {
             if (!currentUser) { router.push("/"); return; }
             setUser(currentUser);
@@ -20,11 +26,25 @@ export default function CreateDiscussionPage() {
         return () => unsubAuth();
     }, [router]);
 
-    function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
-
-        // Backend not connected yet — this is UI-only for now.
-        alert("Discussion post UI is ready. Backend connection coming later.");
+        if (!user) return;
+        setError("");
+        setSubmitting(true);
+        try {
+            const data = new FormData(e.currentTarget);
+            await createDiscussion(
+                user.uid,
+                data.get("course") as string,
+                data.get("title") as string,
+                data.get("body") as string,
+            );
+            router.push("/");
+        } catch (err) {
+            setError("Failed to post discussion. Please try again.");
+            console.error(err);
+            setSubmitting(false);
+        }
     }
 
     if (loading) {
@@ -93,12 +113,17 @@ export default function CreateDiscussionPage() {
                             <label className="mb-2 block text-sm font-semibold text-neutral-800">
                                 Course
                             </label>
-                            <input
+                            <select
                                 name="course"
-                                placeholder="e.g. CS278, MATH51, DESIGN121"
                                 required
-                                className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-[#8C1515]"
-                            />
+                                defaultValue=""
+                                className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 outline-none transition focus:border-[#8C1515]"
+                            >
+                                <option value="" disabled>Select a course</option>
+                                {courses.map((c) => (
+                                    <option key={c.id} value={c.courseName}>{c.courseName}</option>
+                                ))}
+                            </select>
                         </div>
 
                         <div>
@@ -144,11 +169,15 @@ export default function CreateDiscussionPage() {
                             />
                         </div>
 
+                        {error && (
+                            <p className="text-sm text-red-600">{error}</p>
+                        )}
                         <button
                             type="submit"
-                            className="w-full rounded-xl bg-[#8C1515] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#6f1010]"
+                            disabled={submitting}
+                            className="w-full rounded-xl bg-[#8C1515] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#6f1010] disabled:opacity-60"
                         >
-                            Post discussion
+                            {submitting ? "Posting…" : "Post discussion"}
                         </button>
                     </div>
                 </form>

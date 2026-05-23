@@ -37,6 +37,13 @@ export async function getCourseByName(courseName: string): Promise<CourseDoc | n
   return match ? ({ id: match.id, ...match.data() } as CourseDoc) : null;
 }
 
+export async function getAllCourses(): Promise<CourseDoc[]> {
+  const snapshot = await getDocs(coursesRef);
+  return snapshot.docs
+    .map((d) => ({ id: d.id, ...d.data() } as CourseDoc))
+    .sort((a, b) => a.courseName.localeCompare(b.courseName));
+}
+
 // Returns null if the course doesn't exist
 export async function checkCollaborationAllowed(courseId: string): Promise<boolean | null> {
   const course = await getCourse(courseId);

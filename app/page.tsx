@@ -3,52 +3,55 @@
 import { useEffect, useState } from "react";
 import { User } from "firebase/auth";
 import { signInWithGoogle, signOut, onAuthChange } from "@/src/lib/auth";
-import { createUserProfile } from "@/src/lib/users";
+import { createUserProfile, getUserProfile } from "@/src/lib/users";
+import { listenToAllDiscussions, Discussion } from "@/src/lib/discussions";
+import { Timestamp } from "firebase/firestore";
 import Link from "next/link";
 
-const discussionThreads = [
-  {
-    id: "1",
-    course: "CS278",
-    title: "How are people thinking about the piggyback prototype?",
-    preview:
-      "Trying to figure out whether Discord or a Google Form gives us better real behavior data.",
-    replies: 8,
-    status: "Active",
-    lastActive: "12 min ago",
-  },
-  {
-    id: "2",
-    course: "MATH51",
-    title: "Study group for problem set review",
-    preview:
-      "Looking for people who want to go over the harder linear algebra questions before section.",
-    replies: 5,
-    status: "Open",
-    lastActive: "34 min ago",
-  },
-  {
-    id: "3",
-    course: "CS106B",
-    title: "Debugging recursion problems",
-    preview:
-      "Can anyone explain a cleaner way to trace recursive helper functions?",
-    replies: 12,
-    status: "Answered",
-    lastActive: "1 hr ago",
-  },
-];
+function timeAgo(ts: Timestamp): string {
+  const seconds = Math.floor((Date.now() - ts.toMillis()) / 1000);
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hr ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [authError, setAuthError] = useState("");
   const [search, setSearch] = useState("");
+  const [discussions, setDiscussions] = useState<Discussion[]>([]);
+  const [activeFilters, setActiveFilters] = useState<Set<"my-classes" | "unanswered">>(new Set());
+  const [myCourseIds, setMyCourseIds] = useState<string[]>([]);
 
   useEffect(() => {
-    const unsubAuth = onAuthChange(setUser);
+    let unsubDiscussions: (() => void) | null = null;
+
+    const unsubAuth = onAuthChange((currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        unsubDiscussions = listenToAllDiscussions(setDiscussions);
+        getUserProfile(currentUser.uid).then((profile) => {
+          const classes = (profile as Record<string, unknown>)?.classes;
+          if (Array.isArray(classes)) {
+            setMyCourseIds(classes.map((c: { courseId?: string } | string) =>
+              typeof c === "string" ? c : (c.courseId ?? "")
+            ));
+          }
+        });
+      } else {
+        unsubDiscussions?.();
+        unsubDiscussions = null;
+        setDiscussions([]);
+        setMyCourseIds([]);
+      }
+    });
 
     return () => {
       unsubAuth();
+      unsubDiscussions?.();
     };
   }, []);
 
@@ -64,13 +67,14 @@ export default function Home() {
     }
   }
 
-  const filteredThreads = discussionThreads.filter((thread) => {
-    const query = search.toLowerCase();
-
+  const filteredThreads = discussions.filter((d) => {
+    if (activeFilters.has("my-classes") && !myCourseIds.includes(d.courseTag)) return false;
+    if (activeFilters.has("unanswered") && d.replies.length > 0) return false;
+    const q = search.toLowerCase();
     return (
-      thread.course.toLowerCase().includes(query) ||
-      thread.title.toLowerCase().includes(query) ||
-      thread.preview.toLowerCase().includes(query)
+      d.courseTag.toLowerCase().includes(q) ||
+      d.title.toLowerCase().includes(q) ||
+      d.body.toLowerCase().includes(q)
     );
   });
 
@@ -139,15 +143,33 @@ export default function Home() {
               </div>
 
               <div className="flex gap-2 text-sm">
-                <button className="rounded-full bg-[#8C1515] px-4 py-2 font-medium text-white">
+                <button
+                  onClick={() => setActiveFilters(new Set())}
+                  className={`rounded-full px-4 py-2 font-medium transition ${
+                    activeFilters.size === 0
+                      ? "bg-[#8C1515] text-white"
+                      : "border border-neutral-200 text-neutral-600 hover:border-[#8C1515] hover:text-[#8C1515]"
+                  }`}
+                >
                   All
                 </button>
-                <button className="rounded-full border border-neutral-200 px-4 py-2 font-medium text-neutral-600 hover:border-[#8C1515] hover:text-[#8C1515]">
-                  My classes
-                </button>
-                <button className="rounded-full border border-neutral-200 px-4 py-2 font-medium text-neutral-600 hover:border-[#8C1515] hover:text-[#8C1515]">
-                  Unanswered
-                </button>
+                {(["my-classes", "unanswered"] as const).map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setActiveFilters((prev) => {
+                      const next = new Set(prev);
+                      next.has(f) ? next.delete(f) : next.add(f);
+                      return next;
+                    })}
+                    className={`rounded-full px-4 py-2 font-medium transition ${
+                      activeFilters.has(f)
+                        ? "bg-[#8C1515] text-white"
+                        : "border border-neutral-200 text-neutral-600 hover:border-[#8C1515] hover:text-[#8C1515]"
+                    }`}
+                  >
+                    {f === "my-classes" ? "My classes" : "Unanswered"}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -170,17 +192,17 @@ export default function Home() {
                 </div>
               ) : (
                 filteredThreads.map((thread) => (
-                  <article
+                  <Link
                     key={thread.id}
-                    className="cursor-pointer rounded-2xl border border-neutral-200 p-5 transition hover:-translate-y-0.5 hover:border-[#8C1515] hover:shadow-md"
+                    href={`/discussions/${thread.id}`}
+                    className="block rounded-2xl border border-neutral-200 p-5 transition hover:-translate-y-0.5 hover:border-[#8C1515] hover:shadow-md"
                   >
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <span className="rounded-full bg-[#f3e7e7] px-3 py-1 text-xs font-bold text-[#8C1515]">
-                        {thread.course}
+                        {thread.courseTag}
                       </span>
                       <span className="text-xs font-medium text-neutral-500">
-                        {thread.replies} replies · {thread.status} ·{" "}
-                        {thread.lastActive}
+                        {thread.replies.length} {thread.replies.length === 1 ? "reply" : "replies"} · {timeAgo(thread.createdAt)}
                       </span>
                     </div>
 
@@ -189,13 +211,13 @@ export default function Home() {
                     </h3>
 
                     <p className="mt-2 text-sm leading-6 text-neutral-600">
-                      {thread.preview}
+                      {thread.body.length > 140 ? thread.body.slice(0, 140) + "…" : thread.body}
                     </p>
 
                     <p className="mt-4 text-sm font-medium text-[#8C1515]">
                       Open thread →
                     </p>
-                  </article>
+                  </Link>
                 ))
               )}
             </div>
