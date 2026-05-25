@@ -7,6 +7,7 @@ import {
   query,
   where,
   arrayUnion,
+  arrayRemove,
   onSnapshot,
   Timestamp,
 } from "firebase/firestore";
@@ -19,13 +20,15 @@ export async function createSession(
   courseTag: string,
   location: string,
   workDescription: string,
-  expiresAt: Date
+  expiresAt: Date,
+  visibility: "public" | "private" = "public"
 ) {
   return addDoc(sessionsRef, {
     createdBy: uid,
     courseTag,
     location,
     workDescription,
+    visibility,
     createdAt: Timestamp.now(),
     expiresAt: Timestamp.fromDate(expiresAt),
     status: "active",
@@ -42,6 +45,12 @@ export async function joinSession(sessionId: string, uid: string) {
 export async function getActiveSessions() {
   const snap = await getDocs(query(sessionsRef, where("status", "==", "active")));
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+export async function leaveSession(sessionId: string, uid: string) {
+  await updateDoc(doc(db, "sessions", sessionId), {
+    joinedBy: arrayRemove(uid),
+  });
 }
 
 export async function expireSession(sessionId: string) {

@@ -35,6 +35,7 @@ export interface Discussion {
   title: string;
   body: string;
   type?: string;
+  visibility: "public" | "private";
   createdAt: Timestamp;
   upvotes: string[];
   downvotes: string[];
@@ -45,13 +46,15 @@ export async function createDiscussion(
   uid: string,
   courseTag: string,
   title: string,
-  body: string
+  body: string,
+  visibility: "public" | "private" = "public"
 ): Promise<string> {
   const ref = await addDoc(discussionsRef, {
     createdBy: uid,
     courseTag,
     title,
     body,
+    visibility,
     createdAt: Timestamp.now(),
     upvotes: [],
     downvotes: [],

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { User } from "firebase/auth";
 import { signInWithGoogle, signOut, onAuthChange } from "@/src/lib/auth";
 import { createUserProfile, getUserProfile } from "@/src/lib/users";
+import { listenToFriendships } from "@/src/lib/friends";
 import { listenToAllDiscussions, Discussion } from "@/src/lib/discussions";
 import { Timestamp } from "firebase/firestore";
 import Link from "next/link";
@@ -20,19 +21,29 @@ function timeAgo(ts: Timestamp): string {
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState("");
   const [search, setSearch] = useState("");
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [activeFilters, setActiveFilters] = useState<Set<"my-classes" | "unanswered">>(new Set());
   const [myCourseIds, setMyCourseIds] = useState<string[]>([]);
+  const [friendUids, setFriendUids] = useState<string[]>([]);
 
   useEffect(() => {
     let unsubDiscussions: (() => void) | null = null;
 
     const unsubAuth = onAuthChange((currentUser) => {
       setUser(currentUser);
+      setAuthLoading(false);
       if (currentUser) {
         unsubDiscussions = listenToAllDiscussions(setDiscussions);
+        listenToFriendships(currentUser.uid, (fs) => {
+          const accepted = fs
+            .filter((f) => f.status === "accepted")
+            .flatMap((f) => f.users)
+            .filter((uid) => uid !== currentUser.uid);
+          setFriendUids([...new Set(accepted)]);
+        });
         getUserProfile(currentUser.uid).then((profile) => {
           const classes = (profile as Record<string, unknown>)?.classes;
           if (Array.isArray(classes)) {
@@ -68,6 +79,7 @@ export default function Home() {
   }
 
   const filteredThreads = discussions.filter((d) => {
+    if (d.visibility === "private" && d.createdBy !== user?.uid && !friendUids.includes(d.createdBy)) return false;
     if (activeFilters.has("my-classes") && !myCourseIds.includes(d.courseTag)) return false;
     if (activeFilters.has("unanswered") && d.replies.length > 0) return false;
     const q = search.toLowerCase();
@@ -77,6 +89,14 @@ export default function Home() {
       d.body.toLowerCase().includes(q)
     );
   });
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#ead7d7] border-t-[#8C1515]"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -198,9 +218,14 @@ export default function Home() {
                     className="block rounded-2xl border border-neutral-200 p-5 transition hover:-translate-y-0.5 hover:border-[#8C1515] hover:shadow-md"
                   >
                     <div className="mb-3 flex items-center justify-between gap-3">
-                      <span className="rounded-full bg-[#f3e7e7] px-3 py-1 text-xs font-bold text-[#8C1515]">
-                        {thread.courseTag}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-full bg-[#f3e7e7] px-3 py-1 text-xs font-bold text-[#8C1515]">
+                          {thread.courseTag}
+                        </span>
+                        {thread.visibility === "private" && (
+                          <span className="rounded-full border border-neutral-200 px-2 py-1 text-xs text-neutral-500">🔒 Friends</span>
+                        )}
+                      </div>
                       <span className="text-xs font-medium text-neutral-500">
                         {thread.replies.length} {thread.replies.length === 1 ? "reply" : "replies"} · {timeAgo(thread.createdAt)}
                       </span>

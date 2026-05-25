@@ -15,6 +15,7 @@ export default function CreateDiscussionPage() {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
     const [courses, setCourses] = useState<{ id: string; courseName: string }[]>([]);
+    const [visibility, setVisibility] = useState<"public" | "private">("public");
 
     useEffect(() => {
         getAllCourses().then(setCourses);
@@ -38,6 +39,7 @@ export default function CreateDiscussionPage() {
                 data.get("course") as string,
                 data.get("title") as string,
                 data.get("body") as string,
+                visibility,
             );
             router.push("/");
         } catch (err) {
@@ -167,6 +169,33 @@ export default function CreateDiscussionPage() {
                                 required
                                 className="w-full resize-none rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-[#8C1515]"
                             />
+                        </div>
+
+                        <div>
+                            <label className="mb-2 block text-sm font-semibold text-neutral-800">
+                                Visibility
+                            </label>
+                            <div className="flex gap-3">
+                                {(["public", "private"] as const).map((v) => (
+                                    <button
+                                        key={v}
+                                        type="button"
+                                        onClick={() => setVisibility(v)}
+                                        className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-medium transition ${
+                                            visibility === v
+                                                ? "border-[#8C1515] bg-[#8C1515] text-white"
+                                                : "border-neutral-200 text-neutral-600 hover:border-[#8C1515]"
+                                        }`}
+                                    >
+                                        {v === "public" ? "🌐 Public" : "🔒 Friends only"}
+                                    </button>
+                                ))}
+                            </div>
+                            <p className="mt-1.5 text-xs text-neutral-400">
+                                {visibility === "public"
+                                    ? "Anyone on BetterEd can see this post."
+                                    : "Only your friends can see this post."}
+                            </p>
                         </div>
 
                         {error && (
