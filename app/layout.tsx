@@ -21,6 +21,12 @@ const dmSerif = DM_Serif_Display({
 export const metadata: Metadata = {
   title: "BetterEd",
   description: "A student collaboration platform for university courses.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "BetterEd",
+  },
 };
 
 export default function RootLayout({
@@ -34,6 +40,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-[#faf7f5] text-[#1f1f1f]">
+        <meta name="theme-color" content="#8C1515" />
         <header className="sticky top-0 z-50 border-b border-[#ead7d7] bg-white/90 backdrop-blur">
           <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
             <a href="/" className="flex items-center gap-3">

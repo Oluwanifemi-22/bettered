@@ -1,0 +1,22 @@
+{
+  "name": "BetterEd",
+  "short_name": "BetterEd",
+  "description": "Stanford study collaboration platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#faf7f5",
+  "theme_color": "#8C1515",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/bettered-logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/bettered-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
