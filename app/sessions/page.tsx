@@ -6,6 +6,7 @@ import { User } from "firebase/auth";
 import { signOut, onAuthChange } from "@/src/lib/auth";
 import { createSession, joinSession, leaveSession, expireSession, listenToActiveSessions } from "@/src/lib/sessions";
 import { listenToFriendships, getUsersByIds } from "@/src/lib/friends";
+import { writeActivity, deleteActivityForSource } from "@/src/lib/activity";
 
 interface Session {
     id: string;
@@ -56,14 +57,16 @@ export default function SessionsPage() {
         const form = e.currentTarget;
         const data = new FormData(form);
 
-        await createSession(
+        const courseTag = data.get("courseTag") as string;
+        const sessionRef = await createSession(
             user.uid,
-            data.get("courseTag") as string,
+            courseTag,
             data.get("location") as string,
             data.get("workDescription") as string,
             new Date(Date.now() + 2 * 60 * 60 * 1000),
             visibility
         );
+        writeActivity(user.uid, user.displayName ?? user.email ?? "Someone", "created_session", courseTag, sessionRef.id);
 
         form.reset();
         setVisibility("public");
@@ -309,7 +312,7 @@ export default function SessionsPage() {
                                     <div className="mt-4 flex items-center gap-2">
                                         {session.createdBy === user?.uid ? (
                                             <button
-                                                onClick={() => expireSession(session.id)}
+                                                onClick={() => { expireSession(session.id); deleteActivityForSource(session.id); }}
                                                 className="rounded-full border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-500 transition hover:border-red-400 hover:bg-red-50 hover:text-red-600"
                                             >
                                                 End session
@@ -326,7 +329,10 @@ export default function SessionsPage() {
                                             </>
                                         ) : (
                                             <button
-                                                onClick={() => joinSession(session.id, user!.uid)}
+                                                onClick={() => {
+                                                    joinSession(session.id, user!.uid);
+                                                    writeActivity(user!.uid, user!.displayName ?? user!.email ?? "Someone", "joined_session", session.courseTag as string, session.id);
+                                                }}
                                                 className="rounded-full border border-[#8C1515] px-4 py-2 text-sm font-medium text-[#8C1515] transition hover:bg-[#8C1515] hover:text-white"
                                             >
                                                 Join session

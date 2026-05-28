@@ -5,6 +5,7 @@ import {
   updateDoc,
   arrayUnion,
   arrayRemove,
+  increment,
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -41,10 +42,17 @@ export async function addCourseToUser(uid: string, courseId: string, role: "stud
 export async function removeCourseFromUser(uid: string, courseId: string) {
   const userRef = userDoc(uid);
   const snap = await getDoc(userRef);
-  
+
   if (snap.exists()) {
     const currentClasses = snap.data().classes || [];
     const updatedClasses = currentClasses.filter((c: UserClass) => c.courseId !== courseId);
     await updateDoc(userRef, { classes: updatedClasses });
   }
+}
+
+export async function updateReputation(uid: string, courseTag: string, delta: number) {
+  if (delta === 0) return;
+  await updateDoc(userDoc(uid), {
+    [`reputation.${courseTag}`]: increment(delta),
+  });
 }

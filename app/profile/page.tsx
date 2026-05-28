@@ -226,6 +226,25 @@ export default function ProfilePage() {
       {error && <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>}
       {success && <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">{success}</div>}
 
+      {/* Reputation */}
+      {profile?.reputation && Object.keys(profile.reputation as Record<string, number>).length > 0 && (
+        <div className="rounded-lg border border-[#ead7d7] bg-white p-6">
+          <h2 className="mb-1 text-2xl font-bold text-[#1f1f1f]">Reputation</h2>
+          <p className="mb-4 text-sm text-neutral-500">Points earned from upvotes on your posts and replies.</p>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(profile.reputation as Record<string, number>)
+              .sort(([, a], [, b]) => b - a)
+              .map(([course, pts]) => (
+                <div key={course} className="flex items-center gap-2 rounded-2xl border border-[#ead7d7] bg-[#faf7f5] px-4 py-2.5">
+                  <span className="text-sm font-bold text-[#8C1515]">{course}</span>
+                  <span className="text-xs text-neutral-400">·</span>
+                  <span className="text-sm font-semibold text-neutral-700">{pts} pt{pts !== 1 ? "s" : ""}</span>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
       {/* Enrolled Courses */}
       <div className="rounded-lg border border-[#ead7d7] bg-white p-6">
         <h2 className="mb-4 text-2xl font-bold text-[#1f1f1f]">Enrolled Courses</h2>

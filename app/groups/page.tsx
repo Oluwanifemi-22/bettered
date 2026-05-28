@@ -6,6 +6,7 @@ import Link from "next/link";
 import { User } from "firebase/auth";
 import { onAuthChange } from "@/src/lib/auth";
 import { createGroup, joinGroup, listenToUserGroups, listenToPublicGroups, listenToGroupInvites, acceptGroupInvite, declineGroupInvite, Group, GroupInvite } from "@/src/lib/groups";
+import { writeActivity } from "@/src/lib/activity";
 import { getAllCourses } from "@/src/lib/courses";
 
 export default function GroupsPage() {
@@ -45,13 +46,9 @@ export default function GroupsPage() {
         if (!user) return;
         setCreating(true);
         const data = new FormData(e.currentTarget);
-        const id = await createGroup(
-            user.uid,
-            data.get("name") as string,
-            data.get("courseTag") as string,
-            data.get("description") as string,
-            visibility,
-        );
+        const courseTag = data.get("courseTag") as string;
+        const id = await createGroup(user.uid, data.get("name") as string, courseTag, data.get("description") as string, visibility);
+        writeActivity(user.uid, user.displayName ?? user.email ?? "Someone", "created_group", courseTag);
         setCreating(false);
         setShowForm(false);
         setVisibility("public");
@@ -62,6 +59,7 @@ export default function GroupsPage() {
         if (!user) return;
         setRespondingTo(invite.id);
         await acceptGroupInvite(invite.id, invite.groupId, user.uid);
+        writeActivity(user.uid, user.displayName ?? user.email ?? "Someone", "joined_group", invite.courseTag);
         setRespondingTo(null);
         router.push(`/groups/${invite.groupId}`);
     }
@@ -75,7 +73,9 @@ export default function GroupsPage() {
     async function handleJoin(groupId: string) {
         if (!user) return;
         setJoining(groupId);
+        const group = publicGroups.find((g) => g.id === groupId);
         await joinGroup(groupId, user.uid);
+        writeActivity(user.uid, user.displayName ?? user.email ?? "Someone", "joined_group", group?.courseTag);
         setJoining(null);
         router.push(`/groups/${groupId}`);
     }

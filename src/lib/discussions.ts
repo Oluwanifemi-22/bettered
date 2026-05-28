@@ -14,6 +14,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { db } from "./firebase";
+import { updateReputation } from "./users";
 
 const discussionsRef = collection(db, "discussions");
 
@@ -97,18 +98,25 @@ export async function voteOnDiscussion(discussionId: string, uid: string, vote: 
   const data = snap.data();
   const upvotes: string[] = data.upvotes ?? [];
   const downvotes: string[] = data.downvotes ?? [];
+  const authorUid: string = data.createdBy;
+  const courseTag: string = data.courseTag;
 
+  let repDelta = 0;
   if (vote === "up") {
+    repDelta = upvotes.includes(uid) ? -1 : 1;
     await updateDoc(ref, {
       upvotes: upvotes.includes(uid) ? upvotes.filter((u) => u !== uid) : [...upvotes, uid],
       downvotes: downvotes.filter((u) => u !== uid),
     });
   } else {
+    repDelta = upvotes.includes(uid) ? -1 : 0;
     await updateDoc(ref, {
       downvotes: downvotes.includes(uid) ? downvotes.filter((u) => u !== uid) : [...downvotes, uid],
       upvotes: upvotes.filter((u) => u !== uid),
     });
   }
+
+  if (uid !== authorUid) await updateReputation(authorUid, courseTag, repDelta);
 }
 
 export async function voteOnReply(discussionId: string, replyId: string, uid: string, vote: "up" | "down") {
@@ -116,18 +124,25 @@ export async function voteOnReply(discussionId: string, replyId: string, uid: st
   const snap = await getDoc(ref);
   if (!snap.exists()) return;
   const replies: Reply[] = snap.data().replies ?? [];
+  const courseTag: string = snap.data().courseTag;
+
+  let authorUid = "";
+  let repDelta = 0;
 
   const updated = replies.map((r) => {
     if (r.id !== replyId) return r;
+    authorUid = r.uid;
     const upvotes = r.upvotes ?? [];
     const downvotes = r.downvotes ?? [];
     if (vote === "up") {
+      repDelta = upvotes.includes(uid) ? -1 : 1;
       return {
         ...r,
         upvotes: upvotes.includes(uid) ? upvotes.filter((u) => u !== uid) : [...upvotes, uid],
         downvotes: downvotes.filter((u) => u !== uid),
       };
     } else {
+      repDelta = upvotes.includes(uid) ? -1 : 0;
       return {
         ...r,
         downvotes: downvotes.includes(uid) ? downvotes.filter((u) => u !== uid) : [...downvotes, uid],
@@ -137,6 +152,7 @@ export async function voteOnReply(discussionId: string, replyId: string, uid: st
   });
 
   await updateDoc(ref, { replies: updated });
+  if (authorUid && uid !== authorUid) await updateReputation(authorUid, courseTag, repDelta);
 }
 
 export async function deleteDiscussion(discussionId: string) {

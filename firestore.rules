@@ -61,6 +61,11 @@ service cloud.firestore {
         && request.resource.data.replies[0:resource.data.replies.size()] == resource.data.replies;
     }
 
+    match /activity/{eventId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
+    }
+
     match /groupInvites/{inviteId} {
       allow read: if request.auth != null
         && (request.auth.uid == resource.data.toUid || request.auth.uid == resource.data.fromUid);

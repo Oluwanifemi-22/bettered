@@ -6,6 +6,7 @@ import { signInWithGoogle, signOut, onAuthChange } from "@/src/lib/auth";
 import { createUserProfile, getUserProfile } from "@/src/lib/users";
 import { listenToFriendships } from "@/src/lib/friends";
 import { listenToAllDiscussions, Discussion } from "@/src/lib/discussions";
+import { listenToFriendsActivity, activityText, ActivityEvent } from "@/src/lib/activity";
 import { Timestamp } from "firebase/firestore";
 import Link from "next/link";
 
@@ -28,6 +29,7 @@ export default function Home() {
   const [activeFilters, setActiveFilters] = useState<Set<"my-classes" | "unanswered">>(new Set());
   const [myCourseIds, setMyCourseIds] = useState<string[]>([]);
   const [friendUids, setFriendUids] = useState<string[]>([]);
+  const [activityFeed, setActivityFeed] = useState<ActivityEvent[]>([]);
 
   useEffect(() => {
     let unsubDiscussions: (() => void) | null = null;
@@ -57,6 +59,7 @@ export default function Home() {
         unsubDiscussions = null;
         setDiscussions([]);
         setMyCourseIds([]);
+        setActivityFeed([]);
       }
     });
 
@@ -65,6 +68,11 @@ export default function Home() {
       unsubDiscussions?.();
     };
   }, []);
+
+  useEffect(() => {
+    const unsub = listenToFriendsActivity(friendUids, setActivityFeed);
+    return () => unsub();
+  }, [friendUids.join(",")]);
 
   async function handleSignIn() {
     setAuthError("");
@@ -151,6 +159,7 @@ export default function Home() {
             <span>Create post</span>
           </Link>
 
+          <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
           <section className="rounded-3xl border border-[#ead7d7] bg-white p-6 shadow-sm">
             <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
@@ -247,6 +256,36 @@ export default function Home() {
               )}
             </div>
           </section>
+
+          {/* Activity feed sidebar */}
+          <aside className="rounded-3xl border border-[#ead7d7] bg-white p-5 shadow-sm self-start">
+            <h2 className="mb-1 text-lg font-bold text-neutral-950">Friend activity</h2>
+            <p className="mb-4 text-xs text-neutral-400">What your network is up to</p>
+            {activityFeed.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-neutral-200 p-6 text-center">
+                <p className="text-sm font-medium text-neutral-500">No activity yet.</p>
+                <p className="mt-1 text-xs text-neutral-400">Add friends to see what they&apos;re working on.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {activityFeed.map((event) => (
+                  <div key={event.id} className="flex items-start gap-2.5">
+                    <div className="mt-0.5 h-7 w-7 shrink-0 rounded-full bg-[#f3e7e7] flex items-center justify-center text-xs font-bold text-[#8C1515]">
+                      {event.displayName[0].toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm text-neutral-800">
+                        <span className="font-semibold">{event.displayName.split(" ")[0]}</span>{" "}
+                        {activityText(event)}
+                      </p>
+                      <p className="text-xs text-neutral-400">{timeAgo(event.createdAt)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </aside>
+          </div>
         </>
       )}
     </div>

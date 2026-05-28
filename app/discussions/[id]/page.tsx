@@ -15,6 +15,8 @@ import {
   Discussion,
   Reply,
 } from "@/src/lib/discussions";
+import { getUserProfile } from "@/src/lib/users";
+import { writeActivity, deleteActivityForSource } from "@/src/lib/activity";
 import { Timestamp } from "firebase/firestore";
 
 function timeAgo(ts: Timestamp): string {
@@ -253,6 +255,7 @@ export default function ThreadPage() {
   const [error, setError] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [authorRep, setAuthorRep] = useState<number | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -266,7 +269,15 @@ export default function ThreadPage() {
 
   useEffect(() => {
     if (!id) return;
-    const unsub = listenToDiscussion(id, setDiscussion);
+    const unsub = listenToDiscussion(id, (d) => {
+      setDiscussion(d);
+      if (d) {
+        getUserProfile(d.createdBy).then((p) => {
+          const rep = (p as Record<string, unknown>)?.reputation as Record<string, number> | undefined;
+          setAuthorRep(rep?.[d.courseTag] ?? null);
+        });
+      }
+    });
     return () => unsub();
   }, [id]);
 
@@ -277,6 +288,7 @@ export default function ThreadPage() {
     setSubmitting(true);
     try {
       await replyToDiscussion(id, user.uid, user.displayName ?? user.email ?? "Anonymous", replyText.trim());
+      if (discussion) writeActivity(user.uid, user.displayName ?? user.email ?? "Someone", "replied_discussion", discussion.courseTag);
       setReplyText("");
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     } catch (err) {
@@ -289,6 +301,7 @@ export default function ThreadPage() {
 
   async function handleDelete() {
     await deleteDiscussion(id);
+    deleteActivityForSource(id);
     router.push("/");
   }
 
@@ -367,6 +380,11 @@ export default function ThreadPage() {
           {discussion.type && (
             <span className="rounded-full border border-neutral-200 px-3 py-1 text-xs font-medium capitalize text-neutral-500">
               {discussion.type}
+            </span>
+          )}
+          {authorRep !== null && authorRep > 0 && (
+            <span className="rounded-full bg-[#8C1515] px-2.5 py-1 text-xs font-bold text-white">
+              {discussion.courseTag} · {authorRep} pts
             </span>
           )}
           <span className="ml-auto text-xs text-neutral-400">{timeAgo(discussion.createdAt)}</span>
