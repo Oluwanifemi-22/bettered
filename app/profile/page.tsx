@@ -31,7 +31,8 @@ interface UserProfile {
   displayName?: string;
   school?: string;
   classes?: EnrolledCourse[];
-  [key: string]: unknown;
+  role?: string;
+  reputation?: Record<string, number>;
 }
 
 function getRelationship(
@@ -86,7 +87,7 @@ export default function ProfilePage() {
         const userProfile = await getUserProfile(currentUser.uid);
         if (userProfile) {
           setProfile(userProfile as UserProfile);
-          const raw = (userProfile as Record<string, unknown>).classes;
+          const raw = (userProfile as UserProfile).classes;
           setCourses(normalizeClasses(raw));
         }
       } catch (err) {
@@ -243,12 +244,12 @@ export default function ProfilePage() {
       {success && <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">{success}</div>}
 
       {/* Reputation */}
-      {profile?.reputation && Object.keys(profile.reputation as Record<string, number>).length > 0 && (
+      {profile?.reputation && Object.keys(profile.reputation).length > 0 && (
         <div className="rounded-lg border border-[#ead7d7] bg-white p-6">
           <h2 className="mb-1 text-2xl font-bold text-[#1f1f1f]">Reputation</h2>
           <p className="mb-4 text-sm text-neutral-500">Points earned from upvotes on your posts and replies.</p>
           <div className="flex flex-wrap gap-2">
-            {Object.entries(profile.reputation as Record<string, number>)
+            {Object.entries(profile.reputation)
               .sort(([, a], [, b]) => b - a)
               .map(([course, pts]) => (
                 <div key={course} className="flex items-center gap-2 rounded-2xl border border-[#ead7d7] bg-[#faf7f5] px-4 py-2.5">
