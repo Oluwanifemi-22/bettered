@@ -7,6 +7,7 @@ import { User } from "firebase/auth";
 import { signOut, onAuthChange } from "@/src/lib/auth";
 import { createDiscussion } from "@/src/lib/discussions";
 import { writeActivity } from "@/src/lib/activity";
+import { trackEvent } from "@/src/lib/analytics";
 import { getAllCourses } from "@/src/lib/courses";
 
 export default function CreateDiscussionPage() {
@@ -38,6 +39,7 @@ export default function CreateDiscussionPage() {
             const courseTag = data.get("course") as string;
             const discussionId = await createDiscussion(user.uid, courseTag, data.get("title") as string, data.get("body") as string, visibility);
             writeActivity(user.uid, user.displayName ?? user.email ?? "Someone", "posted_discussion", courseTag, discussionId);
+            trackEvent(user.uid, user.displayName ?? user.email ?? "Someone", "discussion_create", { courseTag, sourceId: discussionId });
             router.push("/");
         } catch (err) {
             setError("Failed to post discussion. Please try again.");

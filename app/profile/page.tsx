@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { User } from "firebase/auth";
 import { onAuthChange, signOut } from "@/src/lib/auth";
-import { getUserProfile, addCourseToUser, removeCourseFromUser, createUserProfile } from "@/src/lib/users";
+import { getUserProfile, addCourseToUser, removeCourseFromUser, createUserProfile, setUserRole } from "@/src/lib/users";
 import { getCourseByName } from "@/src/lib/courses";
 import {
   listenToFriendships,
@@ -217,10 +217,26 @@ export default function ProfilePage() {
             Sign Out
           </button>
         </div>
-        <div className="mt-4 text-sm">
-          <span className="font-medium text-neutral-700">School:</span>{" "}
+        <div className="mt-4 flex items-center gap-3 text-sm">
+          <span className="font-medium text-neutral-700">School:</span>
           <span className="text-neutral-600">{profile?.school}</span>
+          {profile?.role === "admin" && (
+            <span className="rounded-full bg-[#8C1515] px-2.5 py-0.5 text-xs font-bold text-white">Admin</span>
+          )}
         </div>
+        {/* Bootstrap: claim admin if you're nife22@stanford.edu and not yet admin */}
+        {user?.email === "nife22@stanford.edu" && profile?.role !== "admin" && (
+          <button
+            onClick={async () => {
+              if (!user) return;
+              await setUserRole(user.uid, "admin");
+              setProfile((p) => p ? { ...p, role: "admin" } : p);
+            }}
+            className="mt-4 rounded-full bg-[#8C1515] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#6f1010]"
+          >
+            Claim admin access
+          </button>
+        )}
       </div>
 
       {error && <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>}

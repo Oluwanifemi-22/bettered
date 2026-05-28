@@ -18,6 +18,7 @@ import {
     reactToMessage,
 } from "@/src/lib/groups";
 import { listenToFriendships, getUsersByIds, UserSummary } from "@/src/lib/friends";
+import { trackEvent } from "@/src/lib/analytics";
 
 const EMOJIS = ["❤️", "😂", "👍", "😮", "😢", "🔥"];
 
@@ -108,6 +109,7 @@ export default function GroupDetailPage() {
         if (!user || !messageText.trim()) return;
         setSending(true);
         const displayName = user.displayName ?? user.email ?? "Someone";
+        trackEvent(user.uid, displayName, "message_sent", { sourceId: groupId, courseTag: group?.courseTag ?? "" });
         await sendGroupMessage(
             groupId, user.uid, displayName, messageText.trim(),
             replyingTo

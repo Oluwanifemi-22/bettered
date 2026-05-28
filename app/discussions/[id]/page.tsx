@@ -17,6 +17,7 @@ import {
 } from "@/src/lib/discussions";
 import { getUserProfile } from "@/src/lib/users";
 import { writeActivity, deleteActivityForSource } from "@/src/lib/activity";
+import { trackEvent } from "@/src/lib/analytics";
 import { Timestamp } from "firebase/firestore";
 
 function timeAgo(ts: Timestamp): string {
@@ -117,10 +118,12 @@ function NestedReplyRow({
   child,
   uid,
   discussionId,
+  onTrack,
 }: {
   child: Reply;
   uid: string;
   discussionId: string;
+  onTrack: (v: "up" | "down") => void;
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const isOwner = child.uid === uid;
@@ -140,7 +143,7 @@ function NestedReplyRow({
             upvotes={child.upvotes ?? []}
             downvotes={child.downvotes ?? []}
             uid={uid}
-            onVote={(v) => voteOnReply(discussionId, child.id, uid, v)}
+            onVote={(v) => { voteOnReply(discussionId, child.id, uid, v); onTrack(v); }}
           />
         )}
         {isOwner && child.id && (
@@ -170,6 +173,7 @@ function ReplyCard({
   onReplyClick,
   onCancelReply,
   onNestedReply,
+  onTrack,
 }: {
   reply: Reply;
   children?: Reply[];
@@ -179,6 +183,7 @@ function ReplyCard({
   onReplyClick: (id: string) => void;
   onCancelReply: () => void;
   onNestedReply: (text: string, parentId: string) => Promise<void>;
+  onTrack: (v: "up" | "down") => void;
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const canVote = !!reply.id;
@@ -201,7 +206,7 @@ function ReplyCard({
             upvotes={reply.upvotes ?? []}
             downvotes={reply.downvotes ?? []}
             uid={uid}
-            onVote={(v) => voteOnReply(discussionId, reply.id, uid, v)}
+            onVote={(v) => { voteOnReply(discussionId, reply.id, uid, v); onTrack(v); }}
           />
         )}
         <button
@@ -236,7 +241,7 @@ function ReplyCard({
       {children && children.length > 0 && (
         <div className="mt-4 space-y-3 border-l-2 border-[#ead7d7] pl-4">
           {children.map((child, i) => (
-            <NestedReplyRow key={child.id ?? i} child={child} uid={uid} discussionId={discussionId} />
+            <NestedReplyRow key={child.id ?? i} child={child} uid={uid} discussionId={discussionId} onTrack={onTrack} />
           ))}
         </div>
       )}
@@ -256,6 +261,7 @@ export default function ThreadPage() {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [authorRep, setAuthorRep] = useState<number | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -263,6 +269,9 @@ export default function ThreadPage() {
       if (!currentUser) { router.push("/"); return; }
       setUser(currentUser);
       setLoading(false);
+      getUserProfile(currentUser.uid).then((p) => {
+        setIsAdmin((p as Record<string, unknown>)?.role === "admin");
+      });
     });
     return () => unsubAuth();
   }, [router]);
@@ -288,7 +297,10 @@ export default function ThreadPage() {
     setSubmitting(true);
     try {
       await replyToDiscussion(id, user.uid, user.displayName ?? user.email ?? "Anonymous", replyText.trim());
-      if (discussion) writeActivity(user.uid, user.displayName ?? user.email ?? "Someone", "replied_discussion", discussion.courseTag);
+      if (discussion) {
+        writeActivity(user.uid, user.displayName ?? user.email ?? "Someone", "replied_discussion", discussion.courseTag);
+        trackEvent(user.uid, user.displayName ?? user.email ?? "Someone", "reply_post", { courseTag: discussion.courseTag, sourceId: id });
+      }
       setReplyText("");
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     } catch (err) {
@@ -343,7 +355,7 @@ export default function ThreadPage() {
             ← Discussion board
           </Link>
 
-          {user?.uid === discussion.createdBy && (
+          {(user?.uid === discussion.createdBy || isAdmin) && (
             <div className="flex items-center gap-2">
               {confirmDelete ? (
                 <>
@@ -404,7 +416,10 @@ export default function ThreadPage() {
               upvotes={discussion.upvotes ?? []}
               downvotes={discussion.downvotes ?? []}
               uid={user.uid}
-              onVote={(v) => voteOnDiscussion(id, user.uid, v)}
+              onVote={(v) => {
+                voteOnDiscussion(id, user.uid, v);
+                trackEvent(user.uid, user.displayName ?? user.email ?? "Someone", v === "up" ? "upvote" : "downvote", { courseTag: discussion.courseTag, sourceId: id });
+              }}
             />
           </div>
         )}
@@ -428,6 +443,7 @@ export default function ThreadPage() {
               onReplyClick={(rid) => setReplyingTo(rid === replyingTo ? null : rid)}
               onCancelReply={() => setReplyingTo(null)}
               onNestedReply={handleNestedReply}
+              onTrack={(v) => trackEvent(user!.uid, user!.displayName ?? user!.email ?? "Someone", v === "up" ? "upvote" : "downvote", { courseTag: discussion.courseTag, sourceId: id })}
             />
           ))}
         </div>

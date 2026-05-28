@@ -65,6 +65,9 @@ export default function RootLayout({
               <a className="transition hover:text-[#8C1515]" href="/profile">
                 Profile
               </a>
+              <a className="transition hover:text-[#8C1515]" href="/admin">
+                Admin
+              </a>
             </div>
           </nav>
         </header>

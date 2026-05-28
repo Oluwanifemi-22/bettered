@@ -7,6 +7,7 @@ import { signOut, onAuthChange } from "@/src/lib/auth";
 import { createSession, joinSession, leaveSession, expireSession, listenToActiveSessions } from "@/src/lib/sessions";
 import { listenToFriendships, getUsersByIds } from "@/src/lib/friends";
 import { writeActivity, deleteActivityForSource } from "@/src/lib/activity";
+import { trackEvent } from "@/src/lib/analytics";
 
 interface Session {
     id: string;
@@ -67,6 +68,7 @@ export default function SessionsPage() {
             visibility
         );
         writeActivity(user.uid, user.displayName ?? user.email ?? "Someone", "created_session", courseTag, sessionRef.id);
+        trackEvent(user.uid, user.displayName ?? user.email ?? "Someone", "session_create", { courseTag, sourceId: sessionRef.id });
 
         form.reset();
         setVisibility("public");
@@ -332,6 +334,7 @@ export default function SessionsPage() {
                                                 onClick={() => {
                                                     joinSession(session.id, user!.uid);
                                                     writeActivity(user!.uid, user!.displayName ?? user!.email ?? "Someone", "joined_session", session.courseTag as string, session.id);
+                                                    trackEvent(user!.uid, user!.displayName ?? user!.email ?? "Someone", "session_join", { courseTag: session.courseTag as string, sourceId: session.id });
                                                 }}
                                                 className="rounded-full border border-[#8C1515] px-4 py-2 text-sm font-medium text-[#8C1515] transition hover:bg-[#8C1515] hover:text-white"
                                             >

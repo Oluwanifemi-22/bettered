@@ -1,10 +1,11 @@
 import {
   doc,
   getDoc,
+  getDocs,
+  collection,
   setDoc,
   updateDoc,
   arrayUnion,
-  arrayRemove,
   increment,
 } from "firebase/firestore";
 import { db } from "./firebase";
@@ -55,4 +56,13 @@ export async function updateReputation(uid: string, courseTag: string, delta: nu
   await updateDoc(userDoc(uid), {
     [`reputation.${courseTag}`]: increment(delta),
   });
+}
+
+export async function setUserRole(uid: string, role: "admin" | null) {
+  await updateDoc(userDoc(uid), { role: role ?? null });
+}
+
+export async function getAllUsersAdmin(): Promise<{ id: string; uid: string; displayName?: string; email?: string; role?: string; reputation?: Record<string, number> }[]> {
+  const snap = await getDocs(collection(db, "users"));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as { id: string; uid: string; displayName?: string; email?: string; role?: string; reputation?: Record<string, number> }));
 }

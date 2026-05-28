@@ -7,6 +7,7 @@ import { User } from "firebase/auth";
 import { onAuthChange } from "@/src/lib/auth";
 import { createGroup, joinGroup, listenToUserGroups, listenToPublicGroups, listenToGroupInvites, acceptGroupInvite, declineGroupInvite, Group, GroupInvite } from "@/src/lib/groups";
 import { writeActivity } from "@/src/lib/activity";
+import { trackEvent } from "@/src/lib/analytics";
 import { getAllCourses } from "@/src/lib/courses";
 
 export default function GroupsPage() {
@@ -49,6 +50,7 @@ export default function GroupsPage() {
         const courseTag = data.get("courseTag") as string;
         const id = await createGroup(user.uid, data.get("name") as string, courseTag, data.get("description") as string, visibility);
         writeActivity(user.uid, user.displayName ?? user.email ?? "Someone", "created_group", courseTag);
+        trackEvent(user.uid, user.displayName ?? user.email ?? "Someone", "group_create", { courseTag, sourceId: id });
         setCreating(false);
         setShowForm(false);
         setVisibility("public");
@@ -60,6 +62,7 @@ export default function GroupsPage() {
         setRespondingTo(invite.id);
         await acceptGroupInvite(invite.id, invite.groupId, user.uid);
         writeActivity(user.uid, user.displayName ?? user.email ?? "Someone", "joined_group", invite.courseTag);
+        trackEvent(user.uid, user.displayName ?? user.email ?? "Someone", "group_join", { courseTag: invite.courseTag ?? "", sourceId: invite.groupId });
         setRespondingTo(null);
         router.push(`/groups/${invite.groupId}`);
     }
@@ -76,6 +79,7 @@ export default function GroupsPage() {
         const group = publicGroups.find((g) => g.id === groupId);
         await joinGroup(groupId, user.uid);
         writeActivity(user.uid, user.displayName ?? user.email ?? "Someone", "joined_group", group?.courseTag);
+        trackEvent(user.uid, user.displayName ?? user.email ?? "Someone", "group_join", { courseTag: group?.courseTag ?? "", sourceId: groupId });
         setJoining(null);
         router.push(`/groups/${groupId}`);
     }
