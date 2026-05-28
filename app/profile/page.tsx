@@ -54,8 +54,8 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [newCourseId, setNewCourseId] = useState("");
   const [newCourseRole, setNewCourseRole] = useState<"student" | "helper">("student");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [error, setError] = useState<string>("");
+  const [success, setSuccess] = useState<string>("");
 
   // Friends state
   const [friendships, setFriendships] = useState<Friendship[]>([]);
