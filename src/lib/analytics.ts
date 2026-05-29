@@ -3,6 +3,7 @@ import {
   addDoc,
   getDocs,
   query,
+  where,
   orderBy,
   onSnapshot,
   Timestamp,
@@ -45,6 +46,16 @@ export async function trackEvent(
     metadata: metadata ?? {},
     createdAt: Timestamp.now(),
   });
+}
+
+// Listens to event count within the last `windowHours` hours — drives the activity widget
+export function listenToRecentEventCount(
+  windowHours: number,
+  callback: (count: number) => void
+): () => void {
+  const since = Timestamp.fromMillis(Date.now() - windowHours * 60 * 60 * 1000);
+  const q = query(analyticsRef, where("createdAt", ">", since));
+  return onSnapshot(q, (snap) => callback(snap.size));
 }
 
 export function listenToRecentEvents(callback: (events: AnalyticsEvent[]) => void) {

@@ -9,6 +9,7 @@ import { createDiscussion } from "@/src/lib/discussions";
 import { writeActivity } from "@/src/lib/activity";
 import { trackEvent } from "@/src/lib/analytics";
 import { getAllCourses } from "@/src/lib/courses";
+import RichTextEditor from "@/app/components/RichTextEditor";
 
 export default function CreateDiscussionPage() {
     const router = useRouter();
@@ -18,6 +19,7 @@ export default function CreateDiscussionPage() {
     const [error, setError] = useState("");
     const [courses, setCourses] = useState<{ id: string; courseName: string }[]>([]);
     const [visibility, setVisibility] = useState<"public" | "private">("public");
+    const [body, setBody] = useState("");
 
     useEffect(() => {
         getAllCourses().then(setCourses);
@@ -37,7 +39,7 @@ export default function CreateDiscussionPage() {
         try {
             const data = new FormData(e.currentTarget);
             const courseTag = data.get("course") as string;
-            const discussionId = await createDiscussion(user.uid, courseTag, data.get("title") as string, data.get("body") as string, visibility);
+            const discussionId = await createDiscussion(user.uid, courseTag, data.get("title") as string, body, visibility);
             writeActivity(user.uid, user.displayName ?? user.email ?? "Someone", "posted_discussion", courseTag, discussionId);
             trackEvent(user.uid, user.displayName ?? user.email ?? "Someone", "discussion_create", { courseTag, sourceId: discussionId });
             router.push("/");
@@ -161,12 +163,11 @@ export default function CreateDiscussionPage() {
                             <label className="mb-2 block text-sm font-semibold text-neutral-800">
                                 Body
                             </label>
-                            <textarea
-                                name="body"
-                                rows={8}
+                            <RichTextEditor
+                                value={body}
+                                onChange={setBody}
                                 placeholder="Add context, what you’ve tried, useful links, or what kind of help you’re looking for..."
-                                required
-                                className="w-full resize-none rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-[#8C1515]"
+                                rows={8}
                             />
                         </div>
 

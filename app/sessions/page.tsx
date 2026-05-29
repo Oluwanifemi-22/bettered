@@ -24,6 +24,8 @@ export default function SessionsPage() {
     const [sessions, setSessions] = useState<Session[]>([]);
     const [loading, setLoading] = useState(true);
     const [visibility, setVisibility] = useState<"public" | "private">("public");
+    const [sessionType, setSessionType] = useState<"in-person" | "zoom">("in-person");
+    const [zoomLink, setZoomLink] = useState("");
     const [friendUids, setFriendUids] = useState<string[]>([]);
     const [userNames, setUserNames] = useState<Map<string, string>>(new Map());
     const [search, setSearch] = useState("");
@@ -65,13 +67,17 @@ export default function SessionsPage() {
             data.get("location") as string,
             data.get("workDescription") as string,
             new Date(Date.now() + 2 * 60 * 60 * 1000),
-            visibility
+            visibility,
+            sessionType,
+            sessionType === "zoom" ? zoomLink : undefined
         );
         writeActivity(user.uid, user.displayName ?? user.email ?? "Someone", "created_session", courseTag, sessionRef.id);
         trackEvent(user.uid, user.displayName ?? user.email ?? "Someone", "session_create", { courseTag, sourceId: sessionRef.id });
 
         form.reset();
         setVisibility("public");
+        setSessionType("in-person");
+        setZoomLink("");
     }
 
     useEffect(() => {
@@ -182,12 +188,51 @@ export default function SessionsPage() {
                                 className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-[#8C1515]"
                             />
 
-                            <input
-                                name="location"
-                                placeholder="Location (e.g. Gates 360)"
-                                required
-                                className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-[#8C1515]"
-                            />
+                            <div>
+                                <p className="mb-2 text-sm font-medium text-neutral-700">Session type</p>
+                                <div className="flex gap-2">
+                                    {(["in-person", "zoom"] as const).map((t) => (
+                                        <button
+                                            key={t}
+                                            type="button"
+                                            onClick={() => setSessionType(t)}
+                                            className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-medium transition ${
+                                                sessionType === t
+                                                    ? "border-[#8C1515] bg-[#8C1515] text-white"
+                                                    : "border-neutral-200 text-neutral-600 hover:border-[#8C1515]"
+                                            }`}
+                                        >
+                                            {t === "in-person" ? "📍 In person" : "💻 Zoom"}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {sessionType === "in-person" ? (
+                                <input
+                                    name="location"
+                                    placeholder="Location (e.g. Gates 360)"
+                                    required
+                                    className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-[#8C1515]"
+                                />
+                            ) : (
+                                <input
+                                    name="location"
+                                    placeholder="Zoom room name (e.g. CS278 study room)"
+                                    required
+                                    className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-[#8C1515]"
+                                />
+                            )}
+
+                            {sessionType === "zoom" && (
+                                <input
+                                    value={zoomLink}
+                                    onChange={(e) => setZoomLink(e.target.value)}
+                                    placeholder="Zoom link (e.g. https://zoom.us/j/...)"
+                                    type="url"
+                                    className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-[#8C1515]"
+                                />
+                            )}
 
                             <input
                                 name="workDescription"
@@ -290,6 +335,9 @@ export default function SessionsPage() {
                                             <span className="rounded-full bg-[#f3e7e7] px-3 py-1 text-xs font-bold text-[#8C1515]">
                                                 {session.courseTag}
                                             </span>
+                                            <span className="rounded-full border border-neutral-200 px-2 py-1 text-xs text-neutral-500">
+                                                {(session.sessionType as string) === "zoom" ? "💻 Zoom" : "📍 In person"}
+                                            </span>
                                             {session.visibility === "private" && (
                                                 <span className="rounded-full border border-neutral-200 px-2 py-1 text-xs text-neutral-500">🔒 Friends</span>
                                             )}
@@ -306,6 +354,17 @@ export default function SessionsPage() {
                                     <p className="mt-2 text-sm text-neutral-600">
                                         {session.location}
                                     </p>
+
+                                    {(session.sessionType as string) === "zoom" && (session.zoomLink as string | null) && (
+                                        <a
+                                            href={session.zoomLink as string}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="mt-1 inline-block text-xs font-semibold text-[#8C1515] hover:underline"
+                                        >
+                                            Join on Zoom →
+                                        </a>
+                                    )}
 
                                     <p className="mt-1 text-xs text-neutral-400">
                                         {studyingText(session)}

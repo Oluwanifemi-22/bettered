@@ -21,7 +21,9 @@ export async function createSession(
   location: string,
   workDescription: string,
   expiresAt: Date,
-  visibility: "public" | "private" = "public"
+  visibility: "public" | "private" = "public",
+  sessionType: "in-person" | "zoom" = "in-person",
+  zoomLink?: string
 ) {
   return addDoc(sessionsRef, {
     createdBy: uid,
@@ -29,6 +31,8 @@ export async function createSession(
     location,
     workDescription,
     visibility,
+    sessionType,
+    zoomLink: zoomLink ?? null,
     createdAt: Timestamp.now(),
     expiresAt: Timestamp.fromDate(expiresAt),
     status: "active",

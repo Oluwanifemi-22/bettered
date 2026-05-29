@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, DM_Serif_Display } from "next/font/google";
 import Image from "next/image";
 import "./globals.css";
+import "katex/dist/katex.min.css";
+import ActivityWidget from "./components/ActivityWidget";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -82,6 +84,8 @@ export default function RootLayout({
         <main className="mx-auto min-h-screen max-w-7xl px-6 py-8">
           {children}
         </main>
+
+        <ActivityWidget />
       </body>
     </html>
   );

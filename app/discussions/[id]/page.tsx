@@ -19,6 +19,7 @@ import { getUserProfile } from "@/src/lib/users";
 import { writeActivity, deleteActivityForSource } from "@/src/lib/activity";
 import { trackEvent } from "@/src/lib/analytics";
 import { Timestamp } from "firebase/firestore";
+import RichTextRenderer from "@/app/components/RichTextRenderer";
 
 function timeAgo(ts: Timestamp): string {
   const seconds = Math.floor((Date.now() - ts.toMillis()) / 1000);
@@ -136,7 +137,7 @@ function NestedReplyRow({
         </span>
         <span className="text-xs text-neutral-400">{timeAgo(child.timestamp)}</span>
       </div>
-      <p className="whitespace-pre-wrap text-sm leading-6 text-neutral-700">{child.text}</p>
+      <RichTextRenderer content={child.text} />
       <div className="mt-2 flex items-center gap-4">
         {child.id && (
           <VoteBar
@@ -198,7 +199,7 @@ function ReplyCard({
         <span className="text-xs text-neutral-400">{timeAgo(reply.timestamp)}</span>
       </div>
 
-      <p className="whitespace-pre-wrap text-sm leading-6 text-neutral-700">{reply.text}</p>
+      <RichTextRenderer content={reply.text} />
 
       <div className="mt-3 flex items-center gap-4">
         {canVote && (
@@ -406,9 +407,7 @@ export default function ThreadPage() {
           {discussion.title}
         </h1>
 
-        <p className="mt-4 whitespace-pre-wrap text-base leading-7 text-neutral-700">
-          {discussion.body}
-        </p>
+        <RichTextRenderer content={discussion.body} className="mt-4" />
 
         {user && (
           <div className="mt-5">
