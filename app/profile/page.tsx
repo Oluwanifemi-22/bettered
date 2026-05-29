@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { User } from "firebase/auth";
 import { onAuthChange, signOut } from "@/src/lib/auth";
 import { getUserProfile, addCourseToUser, removeCourseFromUser, createUserProfile, setUserRole } from "@/src/lib/users";
-import { getCourseByName } from "@/src/lib/courses";
+import { getCourseByName, getAllCourses, requestNewCourse } from "@/src/lib/courses";
 import {
   listenToFriendships,
   sendFriendRequest,
@@ -57,6 +57,11 @@ export default function ProfilePage() {
   const [newCourseRole, setNewCourseRole] = useState<"student" | "helper">("student");
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
+  const [availableCourses, setAvailableCourses] = useState<{ id: string; courseName: string }[]>([]);
+  const [showRequestForm, setShowRequestForm] = useState(false);
+  const [requestName, setRequestName] = useState("");
+  const [requestReason, setRequestReason] = useState("");
+  const [requestSubmitting, setRequestSubmitting] = useState(false);
 
   // Friends state
   const [friendships, setFriendships] = useState<Friendship[]>([]);
@@ -76,6 +81,8 @@ export default function ProfilePage() {
       return next;
     });
   }, [userCache]);
+
+  useEffect(() => { getAllCourses().then(setAvailableCourses); }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthChange(async (currentUser) => {
@@ -153,6 +160,22 @@ export default function ProfilePage() {
       setError("Failed to add course");
       console.error(err);
     }
+  };
+
+  const handleRequestCourse = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !requestName.trim()) return;
+    setRequestSubmitting(true);
+    try {
+      await requestNewCourse(user.uid, requestName, requestReason);
+      setRequestName("");
+      setRequestReason("");
+      setShowRequestForm(false);
+      setSuccess("Request submitted — an admin will review it shortly.");
+    } catch {
+      setError("Failed to submit request. Please try again.");
+    }
+    setRequestSubmitting(false);
   };
 
   const handleSignOut = async () => {
@@ -286,18 +309,25 @@ export default function ProfilePage() {
 
       {/* Add Course */}
       <div className="rounded-lg border border-[#ead7d7] bg-white p-6">
-        <h2 className="mb-4 text-2xl font-bold text-[#1f1f1f]">Add a Course</h2>
+        <h2 className="mb-1 text-2xl font-bold text-[#1f1f1f]">Add a Course</h2>
+        <p className="mb-4 text-sm text-neutral-500">Select from courses available on BetterEd.</p>
         <form onSubmit={handleAddCourse} className="space-y-4">
           <div>
-            <label htmlFor="courseId" className="block text-sm font-medium text-neutral-700">Course name</label>
-            <input
+            <label htmlFor="courseId" className="block text-sm font-medium text-neutral-700">Course</label>
+            <select
               id="courseId"
-              type="text"
               value={newCourseId}
               onChange={(e) => setNewCourseId(e.target.value)}
-              placeholder="e.g. CS 106B, MATH 51"
-              className="mt-2 w-full rounded-lg border border-[#ead7d7] px-4 py-2 text-[#1f1f1f] placeholder-neutral-400 transition focus:border-[#8C1515] focus:outline-none"
-            />
+              required
+              className="mt-2 w-full rounded-lg border border-[#ead7d7] bg-white px-4 py-2 text-[#1f1f1f] transition focus:border-[#8C1515] focus:outline-none"
+            >
+              <option value="" disabled>Select a course…</option>
+              {availableCourses
+                .filter((c) => !courses.some((e) => e.courseId === c.courseName))
+                .map((c) => (
+                  <option key={c.id} value={c.courseName}>{c.courseName}</option>
+                ))}
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-neutral-700">Your role</label>
@@ -318,6 +348,41 @@ export default function ProfilePage() {
             Add Course
           </button>
         </form>
+
+        {/* Request a new course */}
+        <div className="mt-5 border-t border-neutral-100 pt-5">
+          <button
+            onClick={() => setShowRequestForm((v) => !v)}
+            className="text-sm font-medium text-[#8C1515] hover:underline"
+          >
+            {showRequestForm ? "▲ Cancel request" : "Don't see your course? Request it →"}
+          </button>
+          {showRequestForm && (
+            <form onSubmit={handleRequestCourse} className="mt-4 space-y-3">
+              <input
+                value={requestName}
+                onChange={(e) => setRequestName(e.target.value)}
+                placeholder="Course name (e.g. CS 224N)"
+                required
+                className="w-full rounded-lg border border-[#ead7d7] px-4 py-2 text-sm text-[#1f1f1f] placeholder-neutral-400 transition focus:border-[#8C1515] focus:outline-none"
+              />
+              <textarea
+                value={requestReason}
+                onChange={(e) => setRequestReason(e.target.value)}
+                placeholder="Why should this course be on BetterEd? (optional)"
+                rows={2}
+                className="w-full resize-none rounded-lg border border-[#ead7d7] px-4 py-2 text-sm text-[#1f1f1f] placeholder-neutral-400 transition focus:border-[#8C1515] focus:outline-none"
+              />
+              <button
+                type="submit"
+                disabled={requestSubmitting}
+                className="w-full rounded-lg border border-[#8C1515] px-4 py-2 text-sm font-medium text-[#8C1515] transition hover:bg-[#8C1515] hover:text-white disabled:opacity-50"
+              >
+                {requestSubmitting ? "Submitting…" : "Submit request"}
+              </button>
+            </form>
+          )}
+        </div>
       </div>
 
       {/* Incoming Requests */}

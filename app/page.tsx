@@ -9,6 +9,7 @@ import { listenToAllDiscussions, Discussion } from "@/src/lib/discussions";
 import { listenToFriendsActivity, activityText, ActivityEvent } from "@/src/lib/activity";
 import { Timestamp } from "firebase/firestore";
 import Link from "next/link";
+import ShareButton from "@/app/components/ShareButton";
 
 function timeAgo(ts: Timestamp): string {
   const seconds = Math.floor((Date.now() - ts.toMillis()) / 1000);
@@ -159,6 +160,26 @@ export default function Home() {
             <span>Create post</span>
           </Link>
 
+          {/* App intro — quick-start guide */}
+          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { icon: "💬", title: "Ask questions",  href: "/",         desc: "Post course-specific questions and get answers from classmates who've been there." },
+              { icon: "📚", title: "Share resources", href: "/",        desc: "Drop study guides, practice problems, and useful links for your classes." },
+              { icon: "📍", title: "Study sessions", href: "/sessions", desc: "Post where you're studying and find others working on the same thing." },
+              { icon: "👥", title: "Study groups",   href: "/groups",   desc: "Create or join private groups for deeper collaboration with your classmates." },
+            ].map(({ icon, title, href, desc }) => (
+              <Link
+                key={title}
+                href={href}
+                className="rounded-2xl border border-[#ead7d7] bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-[#8C1515] hover:shadow-md"
+              >
+                <span className="text-2xl">{icon}</span>
+                <p className="mt-2 text-sm font-bold text-neutral-900">{title}</p>
+                <p className="mt-1 text-xs leading-5 text-neutral-500">{desc}</p>
+              </Link>
+            ))}
+          </section>
+
           <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
           <section className="rounded-3xl border border-[#ead7d7] bg-white p-6 shadow-sm">
             <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -170,6 +191,11 @@ export default function Home() {
                   Browse class questions, study plans, and shared resources.
                 </p>
               </div>
+              <ShareButton
+                title="BetterEd — student collaboration for Stanford"
+                text="Ask questions, share resources, and find study sessions on BetterEd."
+                label="Share BetterEd"
+              />
 
               <div className="flex gap-2 text-sm">
                 <button
@@ -221,11 +247,13 @@ export default function Home() {
                 </div>
               ) : (
                 filteredThreads.map((thread) => (
-                  <Link
+                  <div
                     key={thread.id}
-                    href={`/discussions/${thread.id}`}
-                    className="block rounded-2xl border border-neutral-200 p-5 transition hover:-translate-y-0.5 hover:border-[#8C1515] hover:shadow-md"
+                    className="relative rounded-2xl border border-neutral-200 p-5 transition hover:-translate-y-0.5 hover:border-[#8C1515] hover:shadow-md"
                   >
+                    {/* Invisible overlay link covers the whole card except the share button */}
+                    <Link href={`/discussions/${thread.id}`} className="absolute inset-0 rounded-2xl" aria-label={thread.title} />
+
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
                         <span className="rounded-full bg-[#f3e7e7] px-3 py-1 text-xs font-bold text-[#8C1515]">
@@ -248,10 +276,15 @@ export default function Home() {
                       {thread.body.length > 140 ? thread.body.slice(0, 140) + "…" : thread.body}
                     </p>
 
-                    <p className="mt-4 text-sm font-medium text-[#8C1515]">
-                      Open thread →
-                    </p>
-                  </Link>
+                    <div className="relative z-10 mt-4 flex items-center justify-between">
+                      <p className="text-sm font-medium text-[#8C1515]">Open thread →</p>
+                      <ShareButton
+                        title={thread.title}
+                        url={`${typeof window !== "undefined" ? window.location.origin : ""}/discussions/${thread.id}`}
+                        label="Share"
+                      />
+                    </div>
+                  </div>
                 ))
               )}
             </div>

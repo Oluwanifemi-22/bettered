@@ -20,6 +20,7 @@ import { writeActivity, deleteActivityForSource } from "@/src/lib/activity";
 import { trackEvent } from "@/src/lib/analytics";
 import { Timestamp } from "firebase/firestore";
 import RichTextRenderer from "@/app/components/RichTextRenderer";
+import ShareButton from "@/app/components/ShareButton";
 
 function timeAgo(ts: Timestamp): string {
   const seconds = Math.floor((Date.now() - ts.toMillis()) / 1000);
@@ -355,6 +356,7 @@ export default function ThreadPage() {
           <Link href="/" className="text-sm font-semibold text-[#8C1515] hover:underline">
             ← Discussion board
           </Link>
+          <ShareButton title={discussion.title} label="Share thread" />
 
           {(user?.uid === discussion.createdBy || isAdmin) && (
             <div className="flex items-center gap-2">

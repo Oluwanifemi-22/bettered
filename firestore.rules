@@ -41,6 +41,14 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    match /courseRequests/{requestId} {
+      allow create: if request.auth != null;
+      allow read: if request.auth != null;
+      // Approve/deny gated by admin role check in the app
+      allow update: if request.auth != null;
+      allow delete: if false;
+    }
+
     match /discussions/{discussionId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null;

@@ -7,6 +7,7 @@ import { onAuthChange } from "@/src/lib/auth";
 import { getUserProfile, getAllUsersAdmin, setUserRole } from "@/src/lib/users";
 import { listenToRecentEvents, getAnalyticsSummary, AnalyticsEvent } from "@/src/lib/analytics";
 import { deleteDiscussion, listenToAllDiscussions, Discussion } from "@/src/lib/discussions";
+import { getPendingCourseRequests, approveCourseRequest, denyCourseRequest, CourseRequest } from "@/src/lib/courses";
 import { deleteActivityForSource } from "@/src/lib/activity";
 import { collection, getCountFromServer } from "firebase/firestore";
 import { db } from "@/src/lib/firebase";
@@ -35,7 +36,9 @@ export default function AdminPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"overview" | "users" | "content">("overview");
+  const [tab, setTab] = useState<"overview" | "users" | "content" | "requests">("overview");
+  const [courseRequests, setCourseRequests] = useState<CourseRequest[]>([]);
+  const [processingRequestId, setProcessingRequestId] = useState<string | null>(null);
 
   // Overview
   const [counts, setCounts] = useState({ users: 0, discussions: 0, sessions: 0, groups: 0 });
@@ -75,6 +78,7 @@ export default function AdminPage() {
 
     getAnalyticsSummary().then(setSummary);
     getAllUsersAdmin().then(setAllUsers);
+    getPendingCourseRequests().then(setCourseRequests);
 
     const unsubEvents = listenToRecentEvents(setRecentEvents);
     const unsubDiscussions = listenToAllDiscussions(setDiscussions);
@@ -86,6 +90,20 @@ export default function AdminPage() {
     await setUserRole(uid, current === "admin" ? null : "admin");
     setAllUsers((prev) => prev.map((u) => u.uid === uid ? { ...u, role: current === "admin" ? undefined : "admin" } : u));
     setPromotingUid(null);
+  }
+
+  async function handleApproveRequest(id: string, collaborationAllowed: boolean) {
+    setProcessingRequestId(id);
+    await approveCourseRequest(id, collaborationAllowed);
+    setCourseRequests((prev) => prev.filter((r) => r.id !== id));
+    setProcessingRequestId(null);
+  }
+
+  async function handleDenyRequest(id: string) {
+    setProcessingRequestId(id);
+    await denyCourseRequest(id);
+    setCourseRequests((prev) => prev.filter((r) => r.id !== id));
+    setProcessingRequestId(null);
   }
 
   async function handleAdminDeleteDiscussion(id: string) {
@@ -115,7 +133,7 @@ export default function AdminPage() {
         </div>
 
         <div className="mt-6 flex gap-2">
-          {(["overview", "users", "content"] as const).map((t) => (
+          {(["overview", "users", "content", "requests"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -123,7 +141,7 @@ export default function AdminPage() {
                 tab === t ? "bg-[#8C1515] text-white" : "border border-neutral-200 text-neutral-600 hover:border-[#8C1515] hover:text-[#8C1515]"
               }`}
             >
-              {t}
+              {t === "requests" ? `Requests${courseRequests.length > 0 ? ` (${courseRequests.length})` : ""}` : t}
             </button>
           ))}
         </div>
@@ -264,6 +282,55 @@ export default function AdminPage() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {tab === "requests" && (
+        <div className="rounded-3xl border border-[#ead7d7] bg-white p-6 shadow-sm">
+          <h2 className="mb-1 text-xl font-bold text-neutral-950">Course requests</h2>
+          <p className="mb-5 text-sm text-neutral-500">Students are asking for these courses to be added. Approve to create the course; specify whether collaboration is allowed.</p>
+          {courseRequests.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-neutral-200 p-8 text-center">
+              <p className="text-sm font-medium text-neutral-500">No pending requests.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {courseRequests.map((req) => (
+                <div key={req.id} className="rounded-2xl border border-neutral-100 p-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-neutral-900">{req.courseName}</p>
+                      {req.reason && <p className="mt-1 text-sm text-neutral-500">"{req.reason}"</p>}
+                      <p className="mt-1 text-xs text-neutral-400">{new Date(req.createdAt.toMillis()).toLocaleDateString()}</p>
+                    </div>
+                    <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+                      <button
+                        onClick={() => handleApproveRequest(req.id, true)}
+                        disabled={processingRequestId === req.id}
+                        className="rounded-full bg-[#8C1515] px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-[#6f1010] disabled:opacity-50"
+                      >
+                        Approve (collab ✓)
+                      </button>
+                      <button
+                        onClick={() => handleApproveRequest(req.id, false)}
+                        disabled={processingRequestId === req.id}
+                        className="rounded-full border border-neutral-300 px-4 py-1.5 text-xs font-medium text-neutral-600 transition hover:border-[#8C1515] hover:text-[#8C1515] disabled:opacity-50"
+                      >
+                        Approve (no collab)
+                      </button>
+                      <button
+                        onClick={() => handleDenyRequest(req.id)}
+                        disabled={processingRequestId === req.id}
+                        className="rounded-full border border-red-200 px-4 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                      >
+                        Deny
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
